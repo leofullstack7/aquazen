@@ -1,0 +1,21 @@
+{
+  "name": "aquazen-spa",
+  "version": "1.0.0",
+  "description": "AQUAZEN Estetica y Spa - sitio web con sistema de reservas, catalogo de servicios/productos y panel administrativo",
+  "main": "server.js",
+  "scripts": {
+    "start": "node --experimental-sqlite server.js",
+    "dev": "node --experimental-sqlite server.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2"
+  }
+}
