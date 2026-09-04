@@ -11,10 +11,13 @@
 
 <!-- ============ GATE (login) ============ -->
 <div class="gate" id="gate">
+  <div class="gate-orb a" aria-hidden="true"></div>
+  <div class="gate-orb b" aria-hidden="true"></div>
+  <div class="gate-grain" aria-hidden="true"></div>
   <div class="gate-box">
     <img src="img/logo_final.png" alt="AQUAZEN">
-    <h2>Panel administrativo</h2>
-    <p class="sub">Ingresa tus credenciales para gestionar AQUAZEN</p>
+    <h2>Command center</h2>
+    <p class="sub">Acceso al panel de AQUAZEN</p>
     <form id="gateForm">
       <div class="field">
         <label for="gateUser">Usuario</label>
@@ -36,8 +39,10 @@
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
       <img src="img/logo_final.png" alt="AQUAZEN">
+      <span>AQUAZEN</span>
     </div>
     <nav class="sidebar-nav">
+      <div class="sidebar-indicator" id="sidebarIndicator" aria-hidden="true"></div>
       <button data-view="dashboard" class="active">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
         Panel general
@@ -81,8 +86,12 @@
 
   <div class="main">
     <div class="topbar">
+      <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
       <h1 id="viewTitle">Panel general</h1>
       <div class="topbar-right">
+        <span class="clock-pill" id="adminClock">--:--</span>
         <span class="admin-pill">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 21v-2a6 6 0 0 1 12 0v2"/></svg>
           <span id="adminUsername">admin</span>
@@ -95,21 +104,21 @@
       <!-- ===== DASHBOARD ===== -->
       <section class="view active" id="view-dashboard">
         <div class="stat-grid">
-          <div class="stat-card"><div class="label">Reservas hoy</div><div class="value" id="statToday">–</div></div>
-          <div class="stat-card"><div class="label">Reservas pendientes</div><div class="value" id="statPending">–</div></div>
-          <div class="stat-card"><div class="label">Servicios activos</div><div class="value" id="statServices">–</div></div>
-          <div class="stat-card"><div class="label">Productos activos</div><div class="value" id="statProducts">–</div></div>
+          <div class="stat-card">
+            <div class="label">Reservas hoy</div>
+            <div class="value" id="statToday">0</div>
+            <div class="occ-bar"><span id="occBar"></span></div>
+            <div class="sub" id="occLabel">Ocupación del día</div>
+          </div>
+          <div class="stat-card"><div class="label">Reservas pendientes</div><div class="value" id="statPending">0</div></div>
+          <div class="stat-card"><div class="label">Servicios activos</div><div class="value" id="statServices">0</div></div>
+          <div class="stat-card"><div class="label">Productos activos</div><div class="value" id="statProducts">0</div></div>
         </div>
         <div class="panel">
           <div class="panel-head"><h3>Próximas reservas</h3><button class="btn btn-ghost btn-sm" data-view-link="calendario">Ver calendario completo</button></div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Fecha</th><th>Hora</th><th>Cliente</th><th>Servicio</th><th>Estado</th></tr></thead>
-              <tbody id="upcomingBody"></tbody>
-            </table>
-          </div>
+          <div class="upcoming-grid" id="upcomingBody"></div>
           <div class="empty-state" id="upcomingEmpty" style="display:none;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            <img src="img/img-lounge.jpg" alt="">
             <p>Aún no hay reservas próximas.</p>
           </div>
         </div>
@@ -155,34 +164,44 @@
 
       <!-- ===== CALENDARIO / RESERVAS ===== -->
       <section class="view" id="view-calendario">
-        <div class="panel">
-          <div class="calendar-head">
-            <div class="calendar-nav">
-              <button id="calPrev">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
-              </button>
-              <h3 id="calLabel">Mes</h3>
-              <button id="calNext">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
-              </button>
+        <div class="cal-layout">
+          <div class="panel">
+            <div class="calendar-head">
+              <div class="calendar-nav">
+                <button id="calPrev" aria-label="Mes anterior">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+                </button>
+                <h3 id="calLabel">Mes</h3>
+                <button id="calNext" aria-label="Mes siguiente">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
+              </div>
+              <button class="btn btn-ghost btn-sm" id="calTodayBtn">Hoy</button>
             </div>
-            <button class="btn btn-ghost btn-sm" id="calTodayBtn">Hoy</button>
+            <div class="calendar-grid" id="calendarGrid"></div>
           </div>
-          <div class="calendar-grid" id="calendarGrid"></div>
-        </div>
 
-        <div class="panel">
-          <div class="panel-head">
-            <h3 id="dayPanelTitle">Reservas del día</h3>
-            <div style="display:flex;gap:8px;">
-              <button class="btn btn-danger btn-sm" id="blockDayBtn">Bloquear día</button>
-              <button class="btn btn-ghost btn-sm" id="unblockDayBtn" style="display:none;">Desbloquear día</button>
+          <div class="panel">
+            <div class="panel-head">
+              <h3 id="dayPanelTitle">Agenda del día</h3>
+              <div style="display:flex;gap:8px;">
+                <button class="btn btn-danger btn-sm" id="blockDayBtn">Bloquear día</button>
+                <button class="btn btn-ghost btn-sm" id="unblockDayBtn" style="display:none;">Desbloquear día</button>
+              </div>
             </div>
-          </div>
-          <div class="day-panel-list" id="dayPanelList"></div>
-          <div class="empty-state" id="dayPanelEmpty">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-            <p>Selecciona un día en el calendario para ver sus reservas.</p>
+            <div class="status-filters" id="statusFilters">
+              <button type="button" class="active" data-status="all">Todas</button>
+              <button type="button" data-status="pendiente">Pendiente</button>
+              <button type="button" data-status="confirmada">Confirmada</button>
+              <button type="button" data-status="completada">Completada</button>
+              <button type="button" data-status="cancelada">Cancelada</button>
+            </div>
+            <div class="day-timeline" id="dayTimeline"></div>
+            <div class="day-panel-list" id="dayPanelList"></div>
+            <div class="empty-state" id="dayPanelEmpty">
+              <img src="img/img-reception.jpg" alt="">
+              <p>Selecciona un día en el calendario para ver su agenda.</p>
+            </div>
           </div>
         </div>
       </section>

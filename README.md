@@ -2,7 +2,7 @@
 
 Sitio web completo para AquaZen: página pública con catálogo de servicios y productos, sistema de reservas en tiempo real, y panel de administración para gestionar todo el contenido y el calendario.
 
-Aplicación full-stack real (no una maqueta): backend en Node.js/Express, base de datos SQLite, autenticación de administrador con JWT. Está lista para funcionar en tu computador y para desplegarse en un hosting con Node.js.
+Aplicación full-stack real (no una maqueta): backend en Node.js/Express, SQLite en local o Postgres en **Supabase** en producción, autenticación de administrador con JWT.
 
 ## Qué incluye
 
@@ -15,7 +15,7 @@ El contenido de servicios y productos (16 servicios, 8 productos, textos de misi
 ## Requisitos
 
 - **Node.js 22.5 o superior** (usa el módulo nativo `node:sqlite`, todavía experimental). Verifica tu versión con `node -v`.
-- No necesitas instalar ninguna base de datos aparte: SQLite se crea automáticamente como un archivo local.
+- En local, sin `DATABASE_URL` ni claves de Supabase, SQLite se crea automáticamente como un archivo en `data/`.
 
 ## Instalación y uso local
 
@@ -79,11 +79,12 @@ aquazen/
 
 ## Poner el sitio en línea (Vercel)
 
-Vercel no puede usar SQLite en disco: cada función serverless es efímera. En producción la app usa **Postgres (Neon)**.
+Vercel no puede usar SQLite en disco: cada función serverless es efímera. En producción la app usa **Postgres de Supabase**. El backend Express sigue siendo la única puerta a la base (no se usa Supabase Auth ni RLS en el cliente).
 
 En el proyecto de Vercel (Settings → Environment Variables) define:
 
-- `DATABASE_URL` — cadena de conexión de Neon (pooler, `sslmode=require`)
+- `DATABASE_URL` — URI del **pooler** de Supabase (puerto `6543`, `sslmode=require`), **o**
+- `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` — alternativa si no tienes la URI de Postgres
 - `JWT_SECRET` — cadena larga y aleatoria
 - `ADMIN_USER` / `ADMIN_PASS` — opcional; solo aplican la primera vez que se crea la base
 
@@ -98,7 +99,7 @@ Antes de publicar: cambia la contraseña del panel admin y no dejes el `JWT_SECR
 
 ## Notas técnicas
 
-- En local, sin `DATABASE_URL`, el backend usa `node:sqlite` (por eso `--experimental-sqlite` en `npm start`).
-- En Vercel usa `@neondatabase/serverless` contra Postgres.
+- En local, sin `DATABASE_URL` ni claves de Supabase, el backend usa `node:sqlite` (por eso `--experimental-sqlite` en `npm start`).
+- En Vercel usa el paquete `postgres` contra el pooler de **Supabase**, o `@supabase/supabase-js` si configuras `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`.
 - Las imágenes del panel se guardan en la base como texto (base64). El límite de body en Vercel es ~4 MB.
 - La autenticación del panel usa JWT con contraseñas cifradas (bcrypt).

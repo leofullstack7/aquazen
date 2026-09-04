@@ -16,6 +16,54 @@
   let BLOCKED_DATES = [];
   let calYear, calMonth; // 0-indexed month
   let selectedDay = null;
+  let statusFilter = 'all';
+
+  const FALLBACK_SERVICE = {
+    faciales: 'img/img-facial.jpg',
+    corporales: 'img/img-massage.jpg',
+    relajacion: 'img/img-stones.jpg',
+    quiropraxia: 'img/img-chiro.jpg',
+  };
+  const FALLBACK_PRODUCT = {
+    'Cuidado Facial': 'img/img-serum.jpg',
+    Corporal: 'img/img-oil.jpg',
+    'Bienestar Postural': 'img/img-chiro.jpg',
+    Aromaterapia: 'img/img-candle.jpg',
+    Kits: 'img/img-ritual.jpg',
+  };
+  function serviceImg(s) {
+    if (!s) return 'img/img-lounge.jpg';
+    return s.image_data || FALLBACK_SERVICE[s.category_slug] || 'img/img-lounge.jpg';
+  }
+  function productImg(p) {
+    if (!p) return 'img/img-serum.jpg';
+    return p.image_data || FALLBACK_PRODUCT[p.category] || 'img/img-serum.jpg';
+  }
+  function bookingImg(b) {
+    const s = SERVICES.find((x) => x.id === b.service_id) || SERVICES.find((x) => x.name === b.service_name);
+    return serviceImg(s);
+  }
+  function reduceMotion() {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+  function countUp(el, value) {
+    const end = Number(value) || 0;
+    if (reduceMotion()) { el.textContent = String(end); return; }
+    const start = 0;
+    const dur = 700;
+    const t0 = performance.now();
+    function tick(now) {
+      const p = Math.min(1, (now - t0) / dur);
+      el.textContent = String(Math.round(start + (end - start) * p));
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+  function tickClock() {
+    const el = $('#adminClock');
+    if (!el) return;
+    el.textContent = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+  }
 
   function toast(msg, isError) {
     const el = $('#toast');
@@ -90,9 +138,20 @@
     $$('.sidebar-nav button').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
     $('#viewTitle').textContent = VIEW_TITLES[name] || 'AQUAZEN';
     $('#sidebar').classList.remove('open');
+    moveSidebarIndicator();
     if (name === 'calendario' && !calYear) initCalendar();
   }
+  function moveSidebarIndicator() {
+    const active = $('.sidebar-nav button.active');
+    const ind = $('#sidebarIndicator');
+    if (!active || !ind) return;
+    ind.style.opacity = '1';
+    ind.style.transform = `translateY(${active.offsetTop}px)`;
+    ind.style.height = active.offsetHeight + 'px';
+  }
   $$('.sidebar-nav button').forEach((b) => b.addEventListener('click', () => showView(b.dataset.view)));
+  const menuToggle = $('#menuToggle');
+  if (menuToggle) menuToggle.addEventListener('click', () => $('#sidebar').classList.toggle('open'));
   document.addEventListener('click', (e) => {
     const link = e.target.closest('[data-view-link]');
     if (link) showView(link.dataset.viewLink);
@@ -121,10 +180,13 @@
   async function loadDashboard() {
     try {
       const summary = await api('/api/admin/summary');
-      $('#statToday').textContent = summary.bookingsToday;
-      $('#statPending').textContent = summary.bookingsPending;
-      $('#statServices').textContent = summary.totalServices;
-      $('#statProducts').textContent = summary.totalProducts;
+      countUp($('#statToday'), summary.bookingsToday);
+      countUp($('#statPending'), summary.bookingsPending);
+      countUp($('#statServices'), summary.totalServices);
+      countUp($('#statProducts'), summary.totalProducts);
+      const occ = Math.min(100, Math.round((Number(summary.bookingsToday) / 18) * 100));
+      $('#occBar').style.width = occ + '%';
+      $('#occLabel').textContent = `Ocupación del día · ${occ}%`;
       const body = $('#upcomingBody');
       if (!summary.upcoming.length) {
         body.innerHTML = '';
@@ -132,13 +194,14 @@
       } else {
         $('#upcomingEmpty').style.display = 'none';
         body.innerHTML = summary.upcoming.map((b) => `
-          <tr>
-            <td>${formatDate(b.booking_date)}</td>
-            <td>${b.booking_time}</td>
-            <td class="name-cell"><strong>${b.customer_name}</strong><span>${b.customer_phone}</span></td>
-            <td>${b.service_name || '—'}</td>
-            <td>${statusBadge(b.status)}</td>
-          </tr>`).join('');
+          <article class="upcoming-card">
+            <img src="${bookingImg(b)}" alt="">
+            <div>
+              <strong>${b.customer_name}</strong>
+              <div class="meta">${formatDate(b.booking_date)} · ${b.booking_time} · ${b.customer_phone}</div>
+              <div>${b.service_name || '—'} ${statusBadge(b.status)}</div>
+            </div>
+          </article>`).join('');
       }
     } catch (e) { toast(e.message, true); }
   }
@@ -170,9 +233,13 @@
     try {
       SERVICES = await api('/api/admin/services');
       const body = $('#servicesBody');
+      if (!SERVICES.length) {
+        body.innerHTML = `<tr><td colspan="7"><div class="empty-state"><img src="img/img-facial.jpg" alt=""><p>No hay servicios todavía.</p></div></td></tr>`;
+        return;
+      }
       body.innerHTML = SERVICES.map((s) => `
         <tr>
-          <td>${s.image_data ? `<img class="thumb" src="${s.image_data}">` : `<div class="thumb"></div>`}</td>
+          <td><img class="thumb" src="${serviceImg(s)}" alt=""></td>
           <td class="name-cell"><strong>${s.name}</strong><span>${s.short_description || ''}</span></td>
           <td>${categoryName(s.category_slug)}</td>
           <td>${money(s.price)}${s.price_max && s.price_max !== s.price ? ' – ' + money(s.price_max) : ''}</td>
@@ -283,9 +350,13 @@
     try {
       PRODUCTS = await api('/api/admin/products');
       const body = $('#productsBody');
+      if (!PRODUCTS.length) {
+        body.innerHTML = `<tr><td colspan="7"><div class="empty-state"><img src="img/img-serum.jpg" alt=""><p>No hay productos todavía.</p></div></td></tr>`;
+        return;
+      }
       body.innerHTML = PRODUCTS.map((p) => `
         <tr>
-          <td>${p.image_data ? `<img class="thumb" src="${p.image_data}">` : `<div class="thumb"></div>`}</td>
+          <td><img class="thumb" src="${productImg(p)}" alt=""></td>
           <td class="name-cell"><strong>${p.name}</strong><span>${p.short_description || ''}</span></td>
           <td>${p.category}</td>
           <td>${money(p.price)}</td>
@@ -510,8 +581,11 @@
     } catch (e) { toast(e.message, true); }
 
     const countByDay = {};
+    const pendingByDay = {};
     bookings.forEach((b) => {
-      countByDay[b.booking_date] = (countByDay[b.booking_date] || 0) + (b.status !== 'cancelada' ? 1 : 0);
+      if (b.status === 'cancelada') return;
+      countByDay[b.booking_date] = (countByDay[b.booking_date] || 0) + 1;
+      if (b.status === 'pendiente') pendingByDay[b.booking_date] = (pendingByDay[b.booking_date] || 0) + 1;
     });
     const blockedSet = new Set(BLOCKED_DATES.map((b) => b.date));
 
@@ -521,12 +595,16 @@
     for (let day = 1; day <= daysInMonth; day++) {
       const iso = `${monthKey}-${String(day).padStart(2, '0')}`;
       const count = countByDay[iso] || 0;
+      const pending = pendingByDay[iso] || 0;
       const isToday = iso === todayIso;
       const isBlocked = blockedSet.has(iso);
-      html += `<div class="calendar-cell ${isToday ? 'today' : ''} ${isBlocked ? 'blocked' : ''}" data-date="${iso}">
+      const isSelected = iso === selectedDay;
+      const dots = Array.from({ length: Math.min(count, 4) }, (_, i) =>
+        `<span class="dot ${pending > i ? 'warn' : ''}"></span>`
+      ).join('');
+      html += `<div class="calendar-cell ${isToday ? 'today' : ''} ${isBlocked ? 'blocked' : ''} ${isSelected ? 'selected' : ''}" data-date="${iso}">
         <span class="daynum">${day}</span>
-        ${isBlocked ? '<span class="blocked-tag">Bloqueado</span>' : ''}
-        ${count > 0 ? `<span class="count">${count}</span>` : ''}
+        ${isBlocked ? '<span class="blocked-tag">Bloqueado</span>' : `<span class="dots">${dots}</span>`}
       </div>`;
     }
     $('#calendarGrid').innerHTML = html;
@@ -541,26 +619,33 @@
 
   function selectDay(iso, monthKey) {
     selectedDay = iso;
-    const bookings = (BOOKINGS_CACHE[monthKey] || []).filter((b) => b.booking_date === iso);
+    $$('.calendar-cell[data-date]').forEach((c) => c.classList.toggle('selected', c.dataset.date === iso));
+    const all = (BOOKINGS_CACHE[monthKey] || []).filter((b) => b.booking_date === iso);
+    const bookings = statusFilter === 'all' ? all : all.filter((b) => b.status === statusFilter);
     const isBlocked = BLOCKED_DATES.some((b) => b.date === iso);
-    $('#dayPanelTitle').textContent = `Reservas del ${formatDate(iso)}`;
+    $('#dayPanelTitle').textContent = `Agenda · ${formatDate(iso)}`;
     $('#blockDayBtn').style.display = isBlocked ? 'none' : 'inline-flex';
     $('#unblockDayBtn').style.display = isBlocked ? 'inline-flex' : 'none';
     $('#blockDayBtn').dataset.date = iso;
     $('#unblockDayBtn').dataset.date = iso;
 
+    renderDayTimeline(bookings);
     const list = $('#dayPanelList');
     const empty = $('#dayPanelEmpty');
     if (!bookings.length) {
       list.innerHTML = '';
       empty.style.display = 'block';
-      empty.querySelector('p').textContent = isBlocked ? 'Este día está bloqueado y no tiene reservas.' : 'No hay reservas para este día.';
+      empty.querySelector('p').textContent = isBlocked
+        ? 'Este día está bloqueado y no tiene reservas.'
+        : (all.length ? 'Ninguna reserva con ese filtro.' : 'No hay reservas para este día.');
     } else {
       empty.style.display = 'none';
       list.innerHTML = bookings.sort((a, b) => a.booking_time.localeCompare(b.booking_time)).map((b) => `
         <div class="day-booking-row" data-id="${b.id}">
+          <img src="${bookingImg(b)}" alt="">
           <span class="time">${b.booking_time}</span>
           <div class="who"><strong>${b.customer_name}</strong><span>${b.customer_phone} · ${b.service_name || 'Sin servicio'}</span></div>
+          ${statusBadge(b.status)}
           <select class="js-status-select" data-id="${b.id}">
             <option value="pendiente" ${b.status === 'pendiente' ? 'selected' : ''}>Pendiente</option>
             <option value="confirmada" ${b.status === 'confirmada' ? 'selected' : ''}>Confirmada</option>
@@ -575,6 +660,45 @@
       $$('.js-del-booking', list).forEach((btn) => btn.addEventListener('click', () => deleteBooking(btn.dataset.id)));
     }
   }
+
+  function timeToMin(t) {
+    const [h, m] = String(t || '09:00').split(':').map(Number);
+    return h * 60 + (m || 0);
+  }
+  function renderDayTimeline(bookings) {
+    const root = $('#dayTimeline');
+    const start = 9 * 60;
+    const end = 18 * 60;
+    const px = 48;
+    let hours = '';
+    for (let t = start; t <= end; t += 60) {
+      const hh = String(Math.floor(t / 60)).padStart(2, '0') + ':00';
+      hours += `<div class="tl-hour"><span class="lbl">${hh}</span></div>`;
+    }
+    const blocks = bookings.map((b) => {
+      const top = ((timeToMin(b.booking_time) - start) / 60) * px;
+      const svc = SERVICES.find((x) => x.id === b.service_id);
+      const dur = svc ? svc.duration_minutes : 60;
+      const height = Math.max(40, (dur / 60) * px - 6);
+      return `<div class="tl-block ${b.status}" style="top:${Math.max(0, top)}px;height:${height}px">
+        <img src="${bookingImg(b)}" alt="">
+        <div><strong>${b.booking_time} · ${b.customer_name}</strong><span>${b.service_name || 'Servicio'} · ${b.customer_phone}</span></div>
+      </div>`;
+    }).join('');
+    root.innerHTML = hours + blocks;
+  }
+
+  $$('#statusFilters button').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      $$('#statusFilters button').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      statusFilter = btn.dataset.status;
+      if (selectedDay) {
+        const monthKey = selectedDay.slice(0, 7);
+        selectDay(selectedDay, monthKey);
+      }
+    });
+  });
 
   async function updateBookingStatus(id, status) {
     try {
@@ -662,8 +786,12 @@
     $('#gate').style.display = 'none';
     $('#adminApp').classList.add('ready');
     $('#adminUsername').textContent = localStorage.getItem('aquazen_user') || 'admin';
+    tickClock();
+    setInterval(tickClock, 30000);
     await loadCategories();
-    await Promise.all([loadDashboard(), loadServices(), loadProducts(), loadTestimonials(), loadGallery(), loadSettings()]);
+    await loadServices();
+    await Promise.all([loadDashboard(), loadProducts(), loadTestimonials(), loadGallery(), loadSettings()]);
+    moveSidebarIndicator();
   }
 
   document.addEventListener('DOMContentLoaded', () => {

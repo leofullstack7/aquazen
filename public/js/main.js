@@ -56,6 +56,40 @@
   };
   function iconFor(catSlug) { return ICONS[catSlug] || ICONS.relajacion; }
 
+  const FALLBACK_SERVICE = {
+    faciales: 'img/img-facial.jpg',
+    corporales: 'img/img-massage.jpg',
+    relajacion: 'img/img-stones.jpg',
+    quiropraxia: 'img/img-chiro.jpg',
+  };
+  const FALLBACK_PRODUCT = {
+    'Cuidado Facial': 'img/img-serum.jpg',
+    Corporal: 'img/img-oil.jpg',
+    'Bienestar Postural': 'img/img-chiro.jpg',
+    Aromaterapia: 'img/img-candle.jpg',
+    Kits: 'img/img-ritual.jpg',
+  };
+  const DEFAULT_GALLERY = [
+    { src: 'img/img-lounge.jpg', caption: 'Lounge AquaZen', span: 'g-big' },
+    { src: 'img/img-facial.jpg', caption: 'Facial', span: 'g-tall' },
+    { src: 'img/img-massage.jpg', caption: 'Masaje', span: 'g-med' },
+    { src: 'img/img-jade.jpg', caption: 'Ritual', span: 'g-small' },
+    { src: 'img/img-stones.jpg', caption: 'Piedras', span: 'g-small' },
+    { src: 'img/img-reception.jpg', caption: 'Recepción', span: 'g-med' },
+    { src: 'img/img-serum.jpg', caption: 'Productos', span: 'g-small' },
+    { src: 'img/img-chiro.jpg', caption: 'Quiropraxia', span: 'g-tall' },
+  ];
+  function mediaForService(s) {
+    if (s.image_data) return `<img src="${s.image_data}" alt="${s.name}">`;
+    const src = FALLBACK_SERVICE[s.category_slug] || 'img/img-lounge.jpg';
+    return `<img src="${src}" alt="${s.name}">`;
+  }
+  function mediaForProduct(p) {
+    if (p.image_data) return `<img src="${p.image_data}" alt="${p.name}">`;
+    const src = FALLBACK_PRODUCT[p.category] || 'img/img-serum.jpg';
+    return `<img src="${src}" alt="${p.name}">`;
+  }
+
   // ---------- NAV ----------
   function initNav() {
     const nav = $('#nav');
@@ -135,9 +169,7 @@
   }
 
   function serviceCardHTML(s) {
-    const media = s.image_data
-      ? `<img src="${s.image_data}" alt="${s.name}">`
-      : `<div class="icon-placeholder">${iconFor(s.category_slug)}</div>`;
+    const media = mediaForService(s);
     return `
       <div class="service-card reveal in" data-id="${s.id}">
         <div class="card-media">
@@ -183,9 +215,7 @@
   }
 
   function productCardHTML(p) {
-    const media = p.image_data
-      ? `<img src="${p.image_data}" alt="${p.name}">`
-      : `<div class="icon-placeholder">${ICONS.producto}</div>`;
+    const media = mediaForProduct(p);
     return `
       <div class="product-card reveal in" data-id="${p.id}">
         <div class="card-media">${media}</div>
@@ -232,10 +262,9 @@
           <img src="${g.image_data}" alt="${g.caption || 'AQUAZEN'}" loading="lazy">
         </div>`).join('');
     } else {
-      // Mosaico decorativo mientras se suben fotos reales desde el panel admin
-      mosaic.innerHTML = GALLERY_SPANS.map((span, i) => `
-        <div class="gallery-item ${span}" style="background:${i % 2 === 0 ? 'linear-gradient(135deg,var(--navy),var(--teal))' : 'linear-gradient(135deg,var(--teal),var(--navy-deep))'}">
-          <div class="icon-placeholder">${GALLERY_PLACEHOLDER_ICONS[i % GALLERY_PLACEHOLDER_ICONS.length]}</div>
+      mosaic.innerHTML = DEFAULT_GALLERY.map((g) => `
+        <div class="gallery-item ${g.span}">
+          <img src="${g.src}" alt="${g.caption}" loading="lazy">
         </div>`).join('');
     }
   }
@@ -254,7 +283,7 @@
     const s = SERVICES.find((x) => x.id === id);
     if (!s) return;
     modalMedia.innerHTML = `<button class="modal-close" id="modalCloseInner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>` +
-      (s.image_data ? `<img src="${s.image_data}" alt="${s.name}">` : `<div class="icon-placeholder modal-icon">${iconFor(s.category_slug)}</div>`);
+      mediaForService(s);
     modalContent.innerHTML = `
       <h3>${s.name}</h3>
       <div class="card-meta" style="margin-bottom:14px;">
@@ -262,17 +291,31 @@
         <span class="card-price">${money(s.price)}${s.price_max && s.price_max !== s.price ? ' – ' + money(s.price_max) : ''}</span>
       </div>
       <p class="long">${s.long_description || s.short_description || ''}</p>
-      <div class="modal-footer">
-        <button class="btn btn-primary" id="modalBookBtn">Reservar este servicio</button>
-        <a href="#" class="btn btn-whatsapp js-wa" data-wa-msg="Hola AQUAZEN! Quiero más información sobre: ${s.name}">Preguntar por WhatsApp</a>
+      <div class="modal-booking" id="modalBooking">
+        <h4>Reserva este servicio</h4>
+        <div class="pub-cal-nav">
+          <button type="button" id="modalCalPrev" aria-label="Mes anterior">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <h4 id="modalCalLabel">Mes</h4>
+          <button type="button" id="modalCalNext" aria-label="Mes siguiente">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+        </div>
+        <div class="pub-cal-grid mini-cal" id="modalCalGrid"></div>
+        <div class="slot-grid" id="modalCalSlots"><div class="slot-empty">Selecciona un día</div></div>
+        <div class="form-row" style="margin-top:14px;">
+          <div class="field"><label for="modalBkName">Nombre</label><input type="text" id="modalBkName" required placeholder="Tu nombre"></div>
+          <div class="field"><label for="modalBkPhone">WhatsApp</label><input type="tel" id="modalBkPhone" required placeholder="300 000 0000"></div>
+        </div>
+        <div class="modal-footer" style="border:0;padding-top:8px;">
+          <button class="btn btn-primary" id="modalBookBtn" type="button">Confirmar reserva</button>
+          <a href="#" class="btn btn-whatsapp js-wa" data-wa-msg="Hola AQUAZEN! Quiero más información sobre: ${s.name}">Preguntar por WhatsApp</a>
+        </div>
       </div>`;
     $('#modalCloseInner').addEventListener('click', closeModal);
-    $('#modalBookBtn').addEventListener('click', () => {
-      closeModal();
-      $('#bkService').value = String(s.id);
-      document.getElementById('reservas').scrollIntoView({ behavior: 'smooth' });
-      refreshAvailability();
-    });
+    bindEmbeddedCalendar(s.id);
+    $('#modalBookBtn').addEventListener('click', () => submitEmbeddedBooking(s));
     bindWaButtons(modalContent);
     openModal();
   }
@@ -281,7 +324,7 @@
     const p = PRODUCTS.find((x) => x.id === id);
     if (!p) return;
     modalMedia.innerHTML = `<button class="modal-close" id="modalCloseInner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>` +
-      (p.image_data ? `<img src="${p.image_data}" alt="${p.name}">` : `<div class="icon-placeholder modal-icon">${ICONS.producto}</div>`);
+      mediaForProduct(p);
     modalContent.innerHTML = `
       <span class="product-cat">${p.category}</span>
       <h3>${p.name}</h3>
@@ -308,57 +351,220 @@
   // ---------- RESERVAS ----------
   const bkService = $('#bkService');
   const bkDate = $('#bkDate');
-  const slotGrid = $('#slotGrid');
   const bkTime = $('#bkTime');
+  const MONTH_LABELS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  const DOW_SHORT = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
   function todayStr() {
     const d = new Date();
-    return d.toISOString().slice(0, 10);
+    const off = d.getTimezoneOffset();
+    const local = new Date(d.getTime() - off * 60000);
+    return local.toISOString().slice(0, 10);
   }
   function maxDateStr() {
     const d = new Date();
     d.setDate(d.getDate() + 60);
-    return d.toISOString().slice(0, 10);
+    const off = d.getTimezoneOffset();
+    const local = new Date(d.getTime() - off * 60000);
+    return local.toISOString().slice(0, 10);
   }
-  bkDate.min = todayStr();
-  bkDate.max = maxDateStr();
+  function workingDaysSet() {
+    return new Set(String(SETTINGS.working_days || '1,2,3,4,5,6').split(',').map(Number));
+  }
+  function prettyDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso + 'T12:00:00');
+    return d.toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' });
+  }
+  function updateDateLabel() {
+    const label = $('#bkDateLabel');
+    if (!label) return;
+    if (bkDate.value && bkTime.value) label.textContent = `${prettyDate(bkDate.value)} · ${bkTime.value}`;
+    else if (bkDate.value) label.textContent = prettyDate(bkDate.value);
+    else label.textContent = 'Elige día y hora';
+  }
 
-  async function refreshAvailability() {
-    bkTime.value = '';
-    const date = bkDate.value;
-    const serviceId = bkService.value;
-    if (!date) {
-      slotGrid.innerHTML = '<div class="slot-empty">Selecciona un servicio y una fecha</div>';
-      return;
+  function paintMonth(grid, year, month, selectedIso, onPick) {
+    const first = new Date(year, month, 1);
+    const startOffset = first.getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const working = workingDaysSet();
+    const today = todayStr();
+    const max = maxDateStr();
+    let html = DOW_SHORT.map((d) => `<div class="pub-cal-dow">${d}</div>`).join('');
+    for (let i = 0; i < startOffset; i++) html += `<div></div>`;
+    for (let day = 1; day <= daysInMonth; day++) {
+      const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dow = new Date(iso + 'T12:00:00').getDay();
+      const closed = !working.has(dow) || iso < today || iso > max;
+      html += `<button type="button" class="pub-cal-day ${iso === today ? 'today' : ''} ${iso === selectedIso ? 'selected' : ''} ${closed ? 'closed' : ''}" data-date="${iso}" ${closed ? 'disabled' : ''}>${day}</button>`;
     }
-    slotGrid.innerHTML = '<div class="slot-empty">Consultando disponibilidad…</div>';
+    grid.innerHTML = html;
+    $$('.pub-cal-day:not(:disabled)', grid).forEach((btn) => {
+      btn.addEventListener('click', () => onPick(btn.dataset.date));
+    });
+  }
+
+  async function paintSlots(el, date, serviceId, selectedTime, onPick) {
+    if (!date) {
+      el.innerHTML = '<div class="slot-empty">Selecciona un día</div>';
+      return { available: false, slots: [] };
+    }
+    el.innerHTML = '<div class="slot-empty">Consultando disponibilidad…</div>';
     try {
       const qs = new URLSearchParams({ date });
       if (serviceId) qs.set('serviceId', serviceId);
       const data = await fetch(`${API}/api/availability?${qs.toString()}`).then((r) => r.json());
       if (!data.available || !data.slots.length) {
-        slotGrid.innerHTML = `<div class="slot-empty">No hay horarios disponibles ese día${data.reason ? ' (' + data.reason + ')' : ''}. Prueba con otra fecha.</div>`;
-        return;
+        const reason = data.reason === 'cerrado' ? 'día cerrado' : (data.reason || 'sin cupo');
+        el.innerHTML = `<div class="slot-empty">No hay horarios (${reason}). Prueba otro día.</div>`;
+        return data;
       }
-      slotGrid.innerHTML = data.slots.map((s) => `<button type="button" class="slot-btn" data-time="${s}">${s}</button>`).join('');
-      $$('.slot-btn', slotGrid).forEach((b) => {
+      el.innerHTML = data.slots.map((s) => `<button type="button" class="slot-btn ${s === selectedTime ? 'selected' : ''}" data-time="${s}">${s}</button>`).join('');
+      $$('.slot-btn', el).forEach((b) => {
         b.addEventListener('click', () => {
-          $$('.slot-btn', slotGrid).forEach((x) => x.classList.remove('selected'));
+          $$('.slot-btn', el).forEach((x) => x.classList.remove('selected'));
           b.classList.add('selected');
-          bkTime.value = b.dataset.time;
+          onPick(b.dataset.time);
         });
       });
+      return data;
     } catch (e) {
-      slotGrid.innerHTML = '<div class="slot-empty">No pudimos cargar la disponibilidad. Intenta de nuevo.</div>';
+      el.innerHTML = '<div class="slot-empty">No pudimos cargar la disponibilidad. Intenta de nuevo.</div>';
+      return { available: false, slots: [] };
     }
   }
-  bkDate.addEventListener('change', refreshAvailability);
-  bkService.addEventListener('change', refreshAvailability);
+
+  const pubCal = { year: new Date().getFullYear(), month: new Date().getMonth(), date: '', time: '' };
+
+  function renderPubCalMonth() {
+    $('#pubCalLabel').textContent = `${MONTH_LABELS[pubCal.month]} ${pubCal.year}`;
+    paintMonth($('#pubCalGrid'), pubCal.year, pubCal.month, pubCal.date, async (iso) => {
+      pubCal.date = iso;
+      pubCal.time = '';
+      $('#pubCalConfirm').disabled = true;
+      renderPubCalMonth();
+      await paintSlots($('#pubCalSlots'), iso, bkService.value, '', (t) => {
+        pubCal.time = t;
+        $('#pubCalConfirm').disabled = false;
+      });
+    });
+  }
+
+  function openBookingCalendar() {
+    if (!bkService.value) { toast('Primero selecciona un servicio'); return; }
+    pubCal.year = new Date().getFullYear();
+    pubCal.month = new Date().getMonth();
+    if (bkDate.value) {
+      const [y, m] = bkDate.value.split('-').map(Number);
+      pubCal.year = y; pubCal.month = m - 1; pubCal.date = bkDate.value;
+    } else { pubCal.date = ''; }
+    pubCal.time = bkTime.value || '';
+    $('#pubCalConfirm').disabled = !pubCal.time;
+    $('#bookingCalendarModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    renderPubCalMonth();
+    if (pubCal.date) {
+      paintSlots($('#pubCalSlots'), pubCal.date, bkService.value, pubCal.time, (t) => {
+        pubCal.time = t;
+        $('#pubCalConfirm').disabled = false;
+      });
+    } else {
+      $('#pubCalSlots').innerHTML = '<div class="slot-empty">Selecciona un día</div>';
+    }
+  }
+  function closeBookingCalendar() {
+    $('#bookingCalendarModal').classList.remove('open');
+    if (!$('#itemModal').classList.contains('open')) document.body.style.overflow = '';
+  }
+  $('#bkDateBtn').addEventListener('click', openBookingCalendar);
+  $('#pubCalClose').addEventListener('click', closeBookingCalendar);
+  $('#pubCalCancel').addEventListener('click', closeBookingCalendar);
+  $('#bookingCalendarModal').addEventListener('click', (e) => { if (e.target === $('#bookingCalendarModal')) closeBookingCalendar(); });
+  $('#pubCalPrev').addEventListener('click', () => {
+    pubCal.month--; if (pubCal.month < 0) { pubCal.month = 11; pubCal.year--; }
+    renderPubCalMonth();
+  });
+  $('#pubCalNext').addEventListener('click', () => {
+    pubCal.month++; if (pubCal.month > 11) { pubCal.month = 0; pubCal.year++; }
+    renderPubCalMonth();
+  });
+  $('#pubCalConfirm').addEventListener('click', () => {
+    if (!pubCal.date || !pubCal.time) return;
+    bkDate.value = pubCal.date;
+    bkTime.value = pubCal.time;
+    updateDateLabel();
+    closeBookingCalendar();
+  });
+  bkService.addEventListener('change', () => {
+    bkDate.value = '';
+    bkTime.value = '';
+    updateDateLabel();
+  });
+
+  const embedCal = { year: new Date().getFullYear(), month: new Date().getMonth(), date: '', time: '', serviceId: '' };
+  function bindEmbeddedCalendar(serviceId) {
+    embedCal.year = new Date().getFullYear();
+    embedCal.month = new Date().getMonth();
+    embedCal.date = '';
+    embedCal.time = '';
+    embedCal.serviceId = String(serviceId);
+    const render = () => {
+      $('#modalCalLabel').textContent = `${MONTH_LABELS[embedCal.month]} ${embedCal.year}`;
+      paintMonth($('#modalCalGrid'), embedCal.year, embedCal.month, embedCal.date, async (iso) => {
+        embedCal.date = iso;
+        embedCal.time = '';
+        render();
+        await paintSlots($('#modalCalSlots'), iso, embedCal.serviceId, '', (t) => { embedCal.time = t; });
+      });
+    };
+    $('#modalCalPrev').addEventListener('click', () => {
+      embedCal.month--; if (embedCal.month < 0) { embedCal.month = 11; embedCal.year--; }
+      render();
+    });
+    $('#modalCalNext').addEventListener('click', () => {
+      embedCal.month++; if (embedCal.month > 11) { embedCal.month = 0; embedCal.year++; }
+      render();
+    });
+    render();
+  }
+  async function submitEmbeddedBooking(service) {
+    if (!embedCal.date || !embedCal.time) { toast('Selecciona un día y una hora'); return; }
+    const name = $('#modalBkName').value.trim();
+    const phone = $('#modalBkPhone').value.trim();
+    if (!name || !phone) { toast('Completa tu nombre y teléfono'); return; }
+    const btn = $('#modalBookBtn');
+    btn.disabled = true;
+    try {
+      const res = await fetch(API + '/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          serviceId: service.id,
+          customerName: name,
+          customerPhone: phone,
+          date: embedCal.date,
+          time: embedCal.time,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'No se pudo crear la reserva');
+      closeModal();
+      $('#bookingWaLink').href = data.whatsappUrl;
+      $('#bookingForm').style.display = 'none';
+      $('#bookingConfirm').classList.add('show');
+      document.getElementById('reservas').scrollIntoView({ behavior: 'smooth' });
+    } catch (err) {
+      toast(err.message || 'Ocurrió un error, intenta de nuevo');
+    } finally {
+      btn.disabled = false;
+    }
+  }
 
   const bookingForm = $('#bookingForm');
   bookingForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!bkTime.value) { toast('Selecciona un horario disponible'); return; }
+    if (!bkDate.value || !bkTime.value) { toast('Selecciona un día y un horario disponible'); return; }
     const submitBtn = $('#bookingSubmitBtn');
     submitBtn.disabled = true;
     submitBtn.style.opacity = '.7';
@@ -390,9 +596,11 @@
   });
   $('#bookingAnotherBtn').addEventListener('click', () => {
     bookingForm.reset();
+    bkDate.value = '';
+    bkTime.value = '';
+    updateDateLabel();
     bookingForm.style.display = '';
     $('#bookingConfirm').classList.remove('show');
-    slotGrid.innerHTML = '<div class="slot-empty">Selecciona un servicio y una fecha</div>';
   });
 
   // ---------- CONSULTA PERSONALIZADA ----------
@@ -458,10 +666,69 @@
     });
   }
 
+  function initPremiumMotion() {
+    const nav = $('#nav');
+    const bar = $('#scrollProgress');
+    const cursor = $('#cursor');
+    const dot = $('#cursorDot');
+    const navCta = $('#navCta');
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    window.addEventListener('scroll', () => {
+      const y = window.scrollY;
+      nav.classList.toggle('scrolled', y > 40);
+      if (navCta) navCta.style.display = y > 420 ? 'inline-flex' : 'none';
+      if (bar) {
+        const h = document.documentElement.scrollHeight - window.innerHeight;
+        bar.style.width = (h > 0 ? (y / h) * 100 : 0) + '%';
+      }
+    }, { passive: true });
+
+    if (!reduced && cursor && dot && window.matchMedia('(hover:hover) and (pointer:fine)').matches) {
+      let x = 0, y = 0, cx = 0, cy = 0;
+      window.addEventListener('mousemove', (e) => { x = e.clientX; y = e.clientY; });
+      const loop = () => {
+        cx += (x - cx) * 0.18;
+        cy += (y - cy) * 0.18;
+        cursor.style.left = cx + 'px';
+        cursor.style.top = cy + 'px';
+        dot.style.left = x + 'px';
+        dot.style.top = y + 'px';
+        requestAnimationFrame(loop);
+      };
+      loop();
+      document.addEventListener('mouseover', (e) => {
+        cursor.classList.toggle('hover', Boolean(e.target.closest('a, button, .service-card, .product-card')));
+      });
+    }
+
+    $$('[data-count]').forEach((el) => {
+      const target = Number(el.dataset.count || 0);
+      const suffix = el.dataset.suffix || '';
+      const obs = new IntersectionObserver((entries) => {
+        entries.forEach((en) => {
+          if (!en.isIntersecting) return;
+          obs.unobserve(el);
+          const start = performance.now();
+          const dur = 1400;
+          const tick = (now) => {
+            const t = Math.min(1, (now - start) / dur);
+            const eased = 1 - Math.pow(1 - t, 3);
+            el.textContent = Math.round(target * eased) + suffix;
+            if (t < 1) requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        });
+      }, { threshold: 0.4 });
+      obs.observe(el);
+    });
+  }
+
   // ---------- INIT ----------
   document.addEventListener('DOMContentLoaded', async () => {
     $('#year').textContent = new Date().getFullYear();
     initNav();
+    initPremiumMotion();
     initCustomForm();
     initLogin();
     bindWaButtons(document);

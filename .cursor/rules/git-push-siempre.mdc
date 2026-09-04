@@ -1,0 +1,14 @@
+---
+description: Tras terminar trabajo, hacer commit y push a git sin esperar que lo pidan.
+alwaysApply: true
+---
+
+# Subir a git siempre
+
+Cuando completes una tarea que deje cambios en el repo (código, estilos, schema, docs):
+
+1. Haz commit con un mensaje claro (por qué, no un listado de archivos).
+2. Haz push a la rama actual (`origin`).
+3. Nunca incluyas secretos: `.env`, claves, JWT, `DATABASE_URL` con contraseña, `SUPABASE_SERVICE_ROLE_KEY`.
+4. No uses `--no-verify`, force push ni `git config`.
+5. Si el commit o el push fallan, corrige y reintenta; no dejes el trabajo solo en local.

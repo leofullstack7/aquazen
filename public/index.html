@@ -6,9 +6,13 @@
 <title>AQUAZEN Estética y Spa · Manizales</title>
 <meta name="description" content="AQUAZEN Estética y Spa: el único centro en Manizales que combina estética integral y quiropraxia certificada para todas las edades. Reserva tu cita hoy.">
 <link rel="icon" href="img/logo_final.png">
+<link rel="preload" as="image" href="img/hero-room.jpg">
 <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+<div class="cursor" id="cursor" aria-hidden="true"></div>
+<div class="cursor-dot" id="cursorDot" aria-hidden="true"></div>
+<div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
 
 <!-- ============ NAV ============ -->
 <header class="nav" id="nav">
@@ -52,18 +56,21 @@
 
 <!-- ============ HERO ============ -->
 <section class="hero" id="inicio">
-  <div class="hero-blob b1"></div>
-  <div class="hero-blob b2"></div>
+  <div class="hero-bg" aria-hidden="true">
+    <img src="img/hero-room.jpg" alt="" class="hero-bg-img">
+    <div class="hero-bg-overlay"></div>
+    <div class="hero-grain"></div>
+  </div>
   <div class="hero-inner">
     <div class="hero-copy">
       <span class="hero-badge">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/></svg>
+        <span class="badge-dot"></span>
         Estética integral + Quiropraxia certificada
       </span>
       <h1>Bienestar real <em>para cada</em> etapa de tu vida</h1>
       <p class="hero-sub">En AQUAZEN combinamos tratamientos estéticos profesionales con quiropraxia certificada, en un mismo lugar y para todas las edades: desde bebés hasta adultos mayores.</p>
       <div class="hero-ctas">
-        <a href="#reservas" class="btn btn-primary">
+        <a href="#reservas" class="btn btn-primary btn-magnetic">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
           Reservar mi cita
         </a>
@@ -72,42 +79,43 @@
           Escríbenos por WhatsApp
         </a>
       </div>
-      <div class="hero-trust">
-        <div class="hero-trust-item">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
-          Profesionales certificados
-        </div>
-        <div class="hero-trust-item">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          Servicios para todas las edades
-        </div>
-        <div class="hero-trust-item">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-          Evaluación inicial gratuita
-        </div>
+      <div class="hero-stats">
+        <div><strong data-count="300" data-suffix="+">0</strong><span>Clientes felices</span></div>
+        <div><strong data-count="16" data-suffix="">0</strong><span>Tratamientos</span></div>
+        <div><strong data-count="5" data-suffix="">0</strong><span>Etapas de vida</span></div>
       </div>
     </div>
-    <div class="hero-visual">
-      <div class="hero-visual-inner">
-        <div class="hero-visual-ring">
-          <div class="hero-visual-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-8-4.5-8-11a4.8 4.8 0 0 1 8-3.6A4.8 4.8 0 0 1 20 10c0 6.5-8 11-8 11Z" opacity=".0"/><path d="M12 3c-2.5 3-4 6-4 9a4 4 0 0 0 8 0c0-3-1.5-6-4-9Z"/><path d="M12 12a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z" opacity="0"/></svg>
-          </div>
-        </div>
-      </div>
+    <div class="hero-collage">
+      <figure class="collage-main float-slow">
+        <img src="img/img-facial.jpg" alt="Facial AquaZen">
+      </figure>
+      <figure class="collage-mid float-mid">
+        <img src="img/img-massage.jpg" alt="Masaje AquaZen">
+      </figure>
+      <figure class="collage-small float-fast">
+        <img src="img/img-jade.jpg" alt="Ritual facial">
+      </figure>
       <div class="hero-visual-card">
         <span class="stars">★★★★★</span>
         <div>
-          <strong>+300 clientes felices</strong>
+          <strong>Experiencia 5 estrellas</strong>
           <span>Bienestar integral en Manizales</span>
         </div>
       </div>
     </div>
   </div>
-  <div class="wave-divider">
-    <svg viewBox="0 0 1440 90" preserveAspectRatio="none"><path fill="#faf8f3" d="M0 40 C 240 90 480 0 720 30 C 960 60 1200 90 1440 40 L1440 90 L0 90 Z"></path></svg>
-  </div>
+  <a href="#nosotros" class="scroll-hint" aria-label="Desplazar">
+    <span>Descubrir</span>
+    <i></i>
+  </a>
 </section>
+
+<div class="marquee" aria-hidden="true">
+  <div class="marquee-track">
+    <span>Faciales</span><span>Quiropraxia</span><span>Masajes</span><span>Relajación</span><span>Corporal</span><span>Manizales</span><span>Estética integral</span><span>Bienestar</span>
+    <span>Faciales</span><span>Quiropraxia</span><span>Masajes</span><span>Relajación</span><span>Corporal</span><span>Manizales</span><span>Estética integral</span><span>Bienestar</span>
+  </div>
+</div>
 
 <!-- ============ VALUE PROPS ============ -->
 <div class="container">
@@ -144,21 +152,26 @@
 </div>
 
 <!-- ============ SOBRE AQUAZEN ============ -->
-<section class="section" id="nosotros">
-  <div class="container">
-    <div class="section-head center">
+<section class="section about-section" id="nosotros">
+  <div class="container about-grid">
+    <div class="about-photos reveal">
+      <img src="img/img-lounge.jpg" alt="Lounge AquaZen" class="about-photo-main">
+      <img src="img/img-ritual.jpg" alt="Ritual de bienestar" class="about-photo-stack">
+      <div class="about-stamp">Manizales · Colombia</div>
+    </div>
+    <div class="about-copy">
       <span class="eyebrow">Qué es AquaZen</span>
       <h2>Un spa para todo público, hecho para tu bienestar real</h2>
       <p>Un lugar donde la estética y el cuidado terapéutico corporal se combinan para ofrecerte una experiencia integral: mejor apariencia física y mejor equilibrio interior, con profesionales capacitados para cada edad.</p>
-    </div>
-    <div class="testimonial-grid" style="margin-top:10px;">
-      <div class="testimonial-card reveal">
-        <span class="eyebrow" style="margin-bottom:10px;">Misión</span>
-        <p class="quote">Trabajamos con el corazón y las manos para ofrecer bienestar real y duradero: una experiencia integral de cuidado físico y emocional que combina terapias quiroprácticas, limpiezas faciales profundas y masajes, en un ambiente cálido, seguro y personalizado.</p>
-      </div>
-      <div class="testimonial-card reveal">
-        <span class="eyebrow" style="margin-bottom:10px;">Visión</span>
-        <p class="quote">Ser un espacio de referencia en Manizales y la región, donde el bienestar sea accesible, humano y completo — integrando la estética integral con el cuidado terapéutico corporal desde una visión consciente y profesional.</p>
+      <div class="mission-vision">
+        <article class="reveal">
+          <h3>Misión</h3>
+          <p>Trabajamos con el corazón y las manos para ofrecer bienestar real y duradero: terapias quiroprácticas, limpiezas faciales profundas y masajes, en un ambiente cálido, seguro y personalizado.</p>
+        </article>
+        <article class="reveal">
+          <h3>Visión</h3>
+          <p>Ser un espacio de referencia en Manizales y la región, donde el bienestar sea accesible, humano y completo — estética integral con cuidado terapéutico consciente.</p>
+        </article>
       </div>
     </div>
   </div>
@@ -190,27 +203,27 @@
     </div>
     <div class="age-grid">
       <div class="age-card reveal">
-        <div class="age-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 21v-2a6 6 0 0 1 12 0v2"/></svg></div>
+        <div class="age-photo"><img src="img/img-ritual.jpg" alt=""></div>
         <h4>Niños (6–12)</h4>
         <p>Prevención postural y relajación ligera</p>
       </div>
       <div class="age-card reveal">
-        <div class="age-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+        <div class="age-photo"><img src="img/img-facial.jpg" alt=""></div>
         <h4>Adolescentes (13–18)</h4>
         <p>Control de acné, limpieza facial y postura</p>
       </div>
       <div class="age-card reveal">
-        <div class="age-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z"/></svg></div>
+        <div class="age-photo"><img src="img/img-jade.jpg" alt=""></div>
         <h4>Adultos jóvenes (19–35)</h4>
         <p>Estética facial, corporal y corrección postural</p>
       </div>
       <div class="age-card reveal">
-        <div class="age-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+        <div class="age-photo"><img src="img/img-chiro.jpg" alt=""></div>
         <h4>Adultos (36–59)</h4>
         <p>Rejuvenecimiento y alivio de dolores de columna</p>
       </div>
       <div class="age-card reveal">
-        <div class="age-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-2.5 3-4 6-4 9a4 4 0 0 0 8 0c0-3-1.5-6-4-9Z"/></svg></div>
+        <div class="age-photo"><img src="img/img-stones.jpg" alt=""></div>
         <h4>Adultos mayores (60+)</h4>
         <p>Movilidad, relajación muscular y bienestar</p>
       </div>
@@ -228,6 +241,7 @@
     </div>
     <div class="booking-wrap">
       <div class="booking-info">
+        <img src="img/img-reception.jpg" alt="" class="booking-info-bg" aria-hidden="true">
         <div>
           <h3>Así de fácil reservas tu bienestar</h3>
           <p>Nuestro sistema muestra en tiempo real los horarios disponibles según el servicio elegido.</p>
@@ -257,15 +271,13 @@
           </div>
           <div class="form-row">
             <div class="field">
-              <label for="bkDate">Fecha</label>
-              <input type="date" id="bkDate" required>
-            </div>
-            <div class="field">
-              <label>Hora disponible</label>
-              <div class="slot-grid" id="slotGrid">
-                <div class="slot-empty">Selecciona un servicio y una fecha</div>
-              </div>
-              <input type="hidden" id="bkTime" required>
+              <label for="bkDateBtn">Fecha y hora</label>
+              <button type="button" class="date-trigger" id="bkDateBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                <span id="bkDateLabel">Elige día y hora</span>
+              </button>
+              <input type="hidden" id="bkDate">
+              <input type="hidden" id="bkTime">
             </div>
           </div>
           <div class="form-row">
@@ -325,6 +337,9 @@
   <div class="container">
     <div class="custom-wrap">
       <div>
+        <div class="custom-photo reveal">
+          <img src="img/img-lounge.jpg" alt="Consulta personalizada AquaZen">
+        </div>
         <span class="eyebrow">A tu medida</span>
         <h2>¿No sabes cuál elegir? Diseñemos tu plan ideal</h2>
         <p style="margin-top:16px;color:var(--ink-soft)">Cuéntanos qué buscas y un especialista te recomendará el tratamiento perfecto para tu edad, tu piel y tu cuerpo — evaluación inicial sin costo.</p>
@@ -392,7 +407,7 @@
 <section class="section" id="contacto">
   <div class="container">
     <div class="cta-final">
-      <div class="hero-blob b1" style="opacity:.25"></div>
+      <img src="img/hero-room.jpg" alt="" class="cta-bg" aria-hidden="true">
       <h2>Tu bienestar empieza con un mensaje</h2>
       <p>Escríbenos por WhatsApp y te ayudamos a agendar tu cita o resolver cualquier duda sobre nuestros servicios.</p>
       <div class="hero-ctas">
@@ -486,6 +501,43 @@
 <a href="#" class="wa-float js-wa" data-wa-msg="Hola AQUAZEN! Quiero más información." aria-label="Escribir por WhatsApp">
   <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.6-.8-1.9-.9-.2-.1-.4-.1-.6.1-.2.3-.7.9-.8 1-.1.2-.3.2-.6.1-.3-.1-1.2-.4-2.2-1.4-.8-.7-1.4-1.6-1.5-1.9-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.1.2-.3.3-.5.1-.2 0-.4 0-.5C11 9 10.5 7.7 10.3 7.2c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s1 2.5 1.1 2.7c.1.2 2 3 4.8 4.3.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.6-.7 1.9-1.3.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2Zm0 18.2c-1.6 0-3.2-.4-4.5-1.2l-.3-.2-3.1.8.8-3-.2-.3a8.2 8.2 0 1 1 7.3 3.9Z"/></svg>
 </a>
+
+<!-- ============ MODAL: CALENDARIO DE RESERVA ============ -->
+<div class="modal-overlay cal-modal" id="bookingCalendarModal">
+  <div class="modal-box cal-sheet">
+    <div class="cal-sheet-head">
+      <div>
+        <p class="eyebrow">Agenda</p>
+        <h3 id="pubCalTitle">Elige día y hora</h3>
+      </div>
+      <button class="modal-close" id="pubCalClose" aria-label="Cerrar" style="position:relative;top:0;right:0;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="cal-sheet-body">
+      <div class="pub-cal-nav">
+        <button type="button" id="pubCalPrev" aria-label="Mes anterior">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <h4 id="pubCalLabel">Mes</h4>
+        <button type="button" id="pubCalNext" aria-label="Mes siguiente">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+      <div class="pub-cal-grid" id="pubCalGrid"></div>
+      <div class="pub-cal-slots-wrap">
+        <h4>Horarios disponibles</h4>
+        <div class="slot-grid" id="pubCalSlots">
+          <div class="slot-empty">Selecciona un día</div>
+        </div>
+      </div>
+    </div>
+    <div class="cal-sheet-foot">
+      <button type="button" class="btn btn-ghost" id="pubCalCancel">Cancelar</button>
+      <button type="button" class="btn btn-primary" id="pubCalConfirm" disabled>Confirmar horario</button>
+    </div>
+  </div>
+</div>
 
 <!-- ============ MODAL: SERVICIO / PRODUCTO ============ -->
 <div class="modal-overlay" id="itemModal">

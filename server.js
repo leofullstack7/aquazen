@@ -40,7 +40,8 @@ function requireAdmin(req, res, next) {
 }
 
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true, db: process.env.DATABASE_URL ? 'postgres' : 'sqlite' });
+  const cloud = Boolean(process.env.DATABASE_URL || (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY));
+  res.json({ ok: true, db: cloud ? 'postgres' : 'sqlite' });
 });
 
 app.post('/api/admin/login', wrap(async (req, res) => {

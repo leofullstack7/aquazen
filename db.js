@@ -1,14 +1,17 @@
 // AQUAZEN - Capa de base de datos
-// Local: SQLite nativo. Vercel: Postgres (Neon) vía DATABASE_URL.
+// Local: SQLite nativo. Producción: Postgres (Supabase) vía DATABASE_URL.
 'use strict';
 require('dotenv').config();
 const bcrypt = require('bcryptjs');
 
 const DATABASE_URL = process.env.DATABASE_URL || '';
-const usePostgres = Boolean(DATABASE_URL);
+const SUPABASE_URL = process.env.SUPABASE_URL || '';
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const usePostgres = Boolean(DATABASE_URL || (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY));
 
 let sqliteDb = null;
-let neonSql = null;
+let pg = null;
+let supabase = null;
 let ready = null;
 
 function toPostgresSql(sql) {
@@ -19,25 +22,48 @@ function toPostgresSql(sql) {
     .replace(/\?/g, () => `$${++i}`);
 }
 
-async function pgQuery(sql, params) {
-  if (typeof neonSql.query === 'function') {
-    const rows = await neonSql.query(sql, params);
-    return Array.isArray(rows) ? rows : (rows?.rows || []);
+function lit(v) {
+  if (v == null) return 'NULL';
+  if (typeof v === 'boolean') return v ? 'TRUE' : 'FALSE';
+  if (typeof v === 'number' && Number.isFinite(v)) return String(v);
+  return "'" + String(v).replace(/'/g, "''") + "'";
+}
+
+function applyPgDialect(sql) {
+  let pgSql = sql
+    .replace(/datetime\('now'\)/gi, 'NOW()')
+    .replace(/\bINSERT OR IGNORE INTO\b/gi, 'INSERT INTO');
+  if (/insert or ignore into service_categories/i.test(sql) && !/on conflict/i.test(pgSql)) {
+    pgSql += ' ON CONFLICT (slug) DO NOTHING';
   }
-  const rows = await neonSql(sql, params);
-  return Array.isArray(rows) ? rows : (rows?.rows || []);
+  if (/^\s*insert\s+/i.test(sql.trim()) && !/\breturning\b/i.test(pgSql)) {
+    pgSql += ' RETURNING *';
+  }
+  return pgSql;
+}
+
+async function pgQuery(sql, params) {
+  if (pg) {
+    const rows = await pg.unsafe(sql, params || []);
+    return Array.isArray(rows) ? rows : [];
+  }
+  let i = 0;
+  const interpolated = sql.replace(/\?/g, () => lit((params || [])[i++]));
+  const { data, error } = await supabase.rpc('aquazen_sql', { q: interpolated });
+  if (error) throw error;
+  let result = data;
+  if (typeof result === 'string') {
+    try { result = JSON.parse(result); } catch (_) { result = []; }
+  }
+  if (result == null) return [];
+  return Array.isArray(result) ? result : [result];
 }
 
 async function exec(sql, params = []) {
   if (usePostgres) {
-    let pgSql = toPostgresSql(sql);
-    if (/insert or ignore into service_categories/i.test(sql) && !/on conflict/i.test(pgSql)) {
-      pgSql += ' ON CONFLICT (slug) DO NOTHING';
-    }
-    if (/^\s*insert\s+/i.test(sql.trim()) && !/\breturning\b/i.test(pgSql)) {
-      pgSql += ' RETURNING *';
-    }
-    return pgQuery(pgSql, params);
+    const dialectSql = applyPgDialect(sql);
+    if (pg) return pgQuery(toPostgresSql(dialectSql), params);
+    return pgQuery(dialectSql, params);
   }
   const stmt = sqliteDb.prepare(sql);
   if (/^\s*select\b/i.test(sql.trim())) {
@@ -257,7 +283,9 @@ async function postgresSchema() {
     )`,
   ];
   for (const sql of statements) await pgQuery(sql, []);
-  await pgQuery('ALTER TABLE testimonials ALTER COLUMN rating TYPE DOUBLE PRECISION', []);
+  try {
+    await pgQuery('ALTER TABLE testimonials ALTER COLUMN rating TYPE DOUBLE PRECISION', []);
+  } catch (_) { /* ya es DOUBLE PRECISION */ }
 }
 
 async function seed() {
@@ -273,7 +301,7 @@ async function seed() {
     ).run(c.slug, c.name, c.sort_order);
   }
 
-  const svcCount = (await db.prepare('SELECT COUNT(*) AS c FROM services').get()).c;
+  const svcCount = Number((await db.prepare('SELECT COUNT(*) AS c FROM services').get() || {}).c || 0);
   if (Number(svcCount) === 0) {
     const insSvc = db.prepare(`INSERT INTO services
       (category_slug, name, short_description, long_description, price, price_max, duration_minutes, image_data, age_groups, active, featured, sort_order)
@@ -299,7 +327,7 @@ async function seed() {
     for (const s of services) await insSvc.run(...s);
   }
 
-  const prodCount = (await db.prepare('SELECT COUNT(*) AS c FROM products').get()).c;
+  const prodCount = Number((await db.prepare('SELECT COUNT(*) AS c FROM products').get() || {}).c || 0);
   if (Number(prodCount) === 0) {
     const insProd = db.prepare(`INSERT INTO products
       (category, name, short_description, long_description, price, rating, image_data, stock, active, sort_order)
@@ -317,7 +345,7 @@ async function seed() {
     for (const p of products) await insProd.run(...p);
   }
 
-  const testCount = (await db.prepare('SELECT COUNT(*) AS c FROM testimonials').get()).c;
+  const testCount = Number((await db.prepare('SELECT COUNT(*) AS c FROM testimonials').get() || {}).c || 0);
   if (Number(testCount) === 0) {
     const insTest = db.prepare('INSERT INTO testimonials (name, text, rating, sort_order) VALUES (?,?,?,?)');
     const testimonials = [
@@ -329,7 +357,7 @@ async function seed() {
     for (const t of testimonials) await insTest.run(...t);
   }
 
-  const adminExists = (await db.prepare('SELECT COUNT(*) AS c FROM admin_users').get()).c;
+  const adminExists = Number((await db.prepare('SELECT COUNT(*) AS c FROM admin_users').get() || {}).c || 0);
   if (Number(adminExists) === 0) {
     const username = process.env.ADMIN_USER || 'aquazen_admin';
     const password = process.env.ADMIN_PASS || 'AquaZen#2026';
@@ -352,13 +380,26 @@ async function init() {
   if (ready) return ready;
   ready = (async () => {
     if (usePostgres) {
-      const { neon } = require('@neondatabase/serverless');
-      const url = DATABASE_URL.replace(/&?channel_binding=require/, '');
-      neonSql = neon(url);
+      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+        const { createClient } = require('@supabase/supabase-js');
+        supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+          auth: { persistSession: false, autoRefreshToken: false },
+        });
+      } else {
+        const postgres = require('postgres');
+        const url = DATABASE_URL.replace(/&?channel_binding=require/, '');
+        pg = postgres(url, {
+          ssl: 'require',
+          prepare: false,
+          max: 1,
+          idle_timeout: 20,
+          connect_timeout: 30,
+        });
+      }
       await postgresSchema();
     } else {
       if (process.env.VERCEL) {
-        throw new Error('En Vercel hace falta DATABASE_URL (Postgres/Neon). SQLite no funciona en serverless.');
+        throw new Error('En Vercel hace falta DATABASE_URL o SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY. SQLite no funciona en serverless.');
       }
       const fs = require('fs');
       const path = require('path');
