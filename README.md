@@ -77,21 +77,28 @@ aquazen/
         └── logo_final.png        # Logo de AquaZen (fondo removido)
 ```
 
-## Poner el sitio en línea (dominio público)
+## Poner el sitio en línea (Vercel)
 
-Este proyecto es una aplicación Node.js con estado (base de datos SQLite en disco), así que necesita un hosting que mantenga un servidor corriendo — no sirve un hosting de archivos estáticos. Opciones sencillas y económicas:
+Vercel no puede usar SQLite en disco: cada función serverless es efímera. En producción la app usa **Postgres (Neon)**.
 
-1. **Railway** o **Render**: conecta el repositorio, configura la variable `JWT_SECRET` (y opcionalmente `ADMIN_USER`/`ADMIN_PASS`), y el comando de arranque `npm start`. Ambos ofrecen disco persistente para que la base de datos SQLite no se borre entre despliegues (revisa la sección de "persistent disk/volume" del servicio).
-2. **VPS propio** (DigitalOcean, Hetzner, etc.): instala Node 22+, sube estos archivos, corre `npm install && npm start` detrás de un proceso administrador como `pm2`, y usa Nginx como proxy inverso con tu dominio y HTTPS (por ejemplo con Certbot).
+En el proyecto de Vercel (Settings → Environment Variables) define:
 
-En cualquier caso, antes de publicar:
+- `DATABASE_URL` — cadena de conexión de Neon (pooler, `sslmode=require`)
+- `JWT_SECRET` — cadena larga y aleatoria
+- `ADMIN_USER` / `ADMIN_PASS` — opcional; solo aplican la primera vez que se crea la base
 
-- Define un `JWT_SECRET` propio y largo en las variables de entorno de producción (no dejes el valor de ejemplo).
-- Cambia la contraseña del panel admin.
-- Haz respaldos periódicos del archivo `data/aquazen.db`.
+Luego vuelve a desplegar. El sitio público queda en `/` y el panel en `/admin`.
+
+Otras opciones si no usas Vercel:
+
+1. **Railway** o **Render**: conecta el repositorio. Puedes usar `DATABASE_URL` (Postgres) o SQLite con disco persistente.
+2. **VPS propio**: Node 22+, `npm install && npm start` con `pm2` y Nginx + HTTPS.
+
+Antes de publicar: cambia la contraseña del panel admin y no dejes el `JWT_SECRET` de ejemplo.
 
 ## Notas técnicas
 
-- El backend usa el módulo nativo `node:sqlite` (por eso el flag `--experimental-sqlite` en el script de arranque) para evitar dependencias nativas que requieren compilación.
-- Las imágenes que subas desde el panel (servicios, productos, galería) se guardan directamente en la base de datos como texto (base64), así que no necesitas configurar almacenamiento de archivos aparte.
-- La autenticación del panel usa JWT con contraseñas cifradas (bcrypt); el token se guarda en el navegador y expira automáticamente.
+- En local, sin `DATABASE_URL`, el backend usa `node:sqlite` (por eso `--experimental-sqlite` en `npm start`).
+- En Vercel usa `@neondatabase/serverless` contra Postgres.
+- Las imágenes del panel se guardan en la base como texto (base64). El límite de body en Vercel es ~4 MB.
+- La autenticación del panel usa JWT con contraseñas cifradas (bcrypt).
